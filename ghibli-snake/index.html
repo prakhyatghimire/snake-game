@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Forest Spirit Snake • Ghibli Edition</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --parchment: #f5efe6;
+      --parchment-dark: #e8e0d0;
+      --ink: #3d352a;
+      --ink-light: #5a5044;
+      --moss: #4a6b3f;
+      --moss-light: #6b8f5a;
+      --moss-dark: #2d4325;
+      --berry: #c41e3a;
+      --berry-glow: #ff4455;
+      --wood: #8b6f47;
+      --wood-dark: #5d4528;
+      --wood-light: #b8956b;
+      --sky: #87ceeb;
+      --cloud: #ffffffee;
+      --gold: #d4a843;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Comfortaa', sans-serif;
+      background: linear-gradient(180deg, #a8d5e8 0%, #c8e8f0 40%, #e8f0d8 100%);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+
+    #canvas-container canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .handwritten {
+      font-family: 'Patrick Hand', cursive;
+    }
+
+    .parchment-panel {
+      background: 
+        radial-gradient(ellipse at 20% 20%, #fdfbf7 0%, #f5efe6 40%, #e8e0d0 100%),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      border: 2px solid var(--wood-dark);
+      border-radius: 12px;
+      box-shadow: 
+        0 4px 20px rgba(61, 53, 42, 0.15),
+        inset 0 1px 0 rgba(255,255,255,0.5),
+        inset 0 -1px 0 rgba(93, 69, 40, 0.1);
+    }
+
+    .wood-button {
+      background: linear-gradient(180deg, var(--wood-light) 0%, var(--wood) 50%, var(--wood-dark) 100%);
+      border: 2px solid var(--wood-dark);
+      border-radius: 10px;
+      color: var(--parchment);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+      box-shadow: 
+        0 3px 0 var(--wood-dark),
+        0 5px 15px rgba(93, 69, 40, 0.3),
+        inset 0 1px 0 rgba(255,255,255,0.15);
+      transition: all 0.15s ease-out;
+      font-family: 'Patrick Hand', cursive;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .wood-button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 
+        0 5px 0 var(--wood-dark),
+        0 8px 20px rgba(93, 69, 40, 0.4),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+
+    .wood-button:active:not(:disabled) {
+      transform: translateY(1px);
+      box-shadow: 
+        0 1px 0 var(--wood-dark),
+        0 3px 10px rgba(93, 69, 40, 0.3),
+        inset 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .wood-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: 
+        0 2px 0 var(--wood-dark),
+        0 3px 10px rgba(93, 69, 40, 0.2),
+        inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+
+    .wood-button:focus-visible {
+      outline: 2px solid var(--gold);
+      outline-offset: 2px;
+    }
+
+    .stat-value {
+      background: linear-gradient(180deg, var(--moss-light) 0%, var(--moss) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 2px 4px rgba(74, 107, 63, 0.2);
+    }
+
+    .berry-count {
+      background: linear-gradient(180deg, #ff6b7a 0%, var(--berry) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .parchment-panel { border-radius: 8px; }
+      .stat-label { font-size: 0.65rem !important; }
+      .stat-value { font-size: 1.25rem !important; }
+    }
+
+    #game-over-modal {
+      background: rgba(61, 53, 42, 0.85);
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-panel {
+      background: 
+        radial-gradient(ellipse at center, #fdfbf7 0%, #f5efe6 60%, #e8e0d0 100%);
+      border: 3px solid var(--wood-dark);
+      border-radius: 16px;
+      box-shadow: 
+        0 10px 40px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+
+    .controls-hint {
+      background: rgba(93, 69, 40, 0.1);
+      border: 1px dashed var(--wood-dark);
+      border-radius: 8px;
+      font-family: 'Patrick Hand', cursive;
+      font-size: 0.75rem;
+      color: var(--ink-light);
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <!-- HUD Top Left -->
+  <div id="hud" class="fixed top-4 left-4 z-20 flex flex-col gap-3" style="pointer-events: none;">
+    <div class="parchment-panel p-4 min-w-[160px] flex items-center gap-4" style="pointer-events: auto;">
+      <div class="flex flex-col items-center">
+        <span class="stat-label handwritten text-xs uppercase tracking-wider" style="color: var(--ink-light);">Score</span>
+        <span id="score-value" class="stat-value handwritten text-2xl font-bold">0</span>
+      </div>
+      <div class="w-px h-10 mx-2" style="background: linear-gradient(180deg, transparent, var(--wood), transparent);"></div>
+      <div class="flex flex-col items-center">
+        <span class="stat-label handwritten text-xs uppercase tracking-wider" style="color: var(--ink-light);">Berries</span>
+        <span id="berry-value" class="berry-count handwritten text-2xl font-bold">0</span>
+      </div>
+    </div>
+    <div class="parchment-panel p-2 flex gap-2" style="pointer-events: auto;">
+      <button id="pause-btn" class="wood-button px-4 py-2 text-sm" aria-label="Pause game">❚❚ Pause</button>
+      <button id="restart-btn" class="wood-button px-4 py-2 text-sm" aria-label="Restart game">↻ Restart</button>
+    </div>
+  </div>
+
+  <!-- Controls Hint Bottom -->
+  <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-20 controls-hint px-4 py-2 text-center" style="pointer-events: none;">
+    <span class="handwritten">Arrows / WASD to guide the spirit • Space to pause</span>
+  </div>
+
+  <!-- Game Over Modal -->
+  <div id="game-over-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden" style="pointer-events: none;">
+    <div class="modal-panel p-8 max-w-sm w-full mx-4 text-center transform transition-all" style="pointer-events: auto;">
+      <div class="mb-4">
+        <span class="handwritten text-4xl font-bold" style="color: var(--berry);">🍃</span>
+        <h2 class="handwritten text-3xl font-bold mt-2" style="color: var(--ink);">Journey's End</h2>
+      </div>
+      <div class="space-y-2 mb-6">
+        <p class="handwritten text-lg" style="color: var(--ink-light);">The forest spirit rests...</p>
+        <div class="flex justify-center gap-6">
+          <div class="parchment-panel px-4 py-2 min-w-[100px]">
+            <span class="stat-label handwritten text-xs uppercase tracking-wider" style="color: var(--ink-light);">Final Score</span>
+            <span id="final-score" class="stat-value handwritten text-2xl font-bold">0</span>
+          </div>
+          <div class="parchment-panel px-4 py-2 min-w-[100px]">
+            <span class="stat-label handwritten text-xs uppercase tracking-wider" style="color: var(--ink-light);">Berries Found</span>
+            <span id="final-berries" class="berry-count handwritten text-2xl font-bold">0</span>
+          </div>
+        </div>
+      </div>
+      <button id="play-again-btn" class="wood-button px-8 py-3 text-lg w-full max-w-xs mx-auto" style="pointer-events: auto;">✦ Play Again ✦</button>
+    </div>
+  </div>
+
+  <!-- Three.js & Anime.js via CDN -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+    import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
+
+    // ──────────────────────────────────────────────────────────────
+    // CONFIGURATION
+    // ──────────────────────────────────────────────────────────────
+    const CONFIG = {
+      GRID_SIZE: 20,
+      GRID_WIDTH: 25,
+      GRID_HEIGHT: 18,
+      INITIAL_SPEED: 160,
+      MIN_SPEED: 70,
+      SPEED_DECREMENT: 3,
+      SEGMENT_SPACING: 1.15,
+      HEAD_RADIUS: 0.55,
+      TAIL_RADIUS: 0.25,
+      ANIMATION_DURATION: 140,
+      TURN_SMOOTHNESS: 0.15,
+      CAMERA_HEIGHT: 22,
+      CAMERA_LOOK_AHEAD: 3,
+    };
+
+    CONFIG.WORLD_WIDTH = CONFIG.GRID_WIDTH * CONFIG.GRID_SIZE;
+    CONFIG.WORLD_HEIGHT = CONFIG.GRID_HEIGHT * CONFIG.GRID_SIZE;
+
+    const COLORS = {
+      MOSS_DARK: 0x2d4325,
+      MOSS_MID: 0x4a6b3f,
+      MOSS_LIGHT: 0x6b8f5a,
+      MOSS_HIGHLIGHT: 0x8fc47a,
+      SOIL: 0x3d2f1f,
+      BARK: 0x5d4528,
+      BARK_LIGHT: 0x8b6f47,
+      BERRY: 0xc41e3a,
+      BERRY_GLOW: 0xff4455,
+      BERRY_HIGHLIGHT: 0xff8899,
+      EYE_GLOW: 0xfff8e7,
+      ANTLER: 0x4a3728,
+      FLOWER_PETAL: 0xffd8e8,
+      FLOWER_CENTER: 0xffd700,
+      STEM: 0x3a5a2a,
+      SKY_TOP: 0x6bb8e6,
+      SKY_HORIZON: 0xa8d5e8,
+      CLOUD: 0xffffffff,
+      FOG: 0xc8e8f0,
+      PARTICLE_GOLD: 0xffd700,
+      PARTICLE_PINK: 0xff6b8a,
+      PARTICLE_GREEN: 0x8fc47a,
+    };
+
+    const DIRECTIONS = {
+      UP:    { x:  0, z: -1, angle: -Math.PI / 2, vec: new THREE.Vector3(0, 0, -1) },
+      DOWN:  { x:  0, z:  1, angle:  Math.PI / 2, vec: new THREE.Vector3(0, 0, 1) },
+      LEFT:  { x: -1, z:  0, angle:  Math.PI,       vec: new THREE.Vector3(-1, 0, 0) },
+      RIGHT: { x:  1, z:  0, angle:  0,             vec: new THREE.Vector3(1, 0, 0) },
+    };
+
+    const KEY_MAP = {
+      ArrowUp: 'UP', KeyW: 'UP', ArrowDown: 'DOWN', KeyS: 'DOWN',
+      ArrowLeft: 'LEFT', KeyA: 'LEFT', ArrowRight: 'RIGHT', KeyD: 'RIGHT',
+      Space: 'PAUSE', Escape: 'PAUSE',
+    };
+
+    // ──────────────────────────────────────────────────────────────
+    // THREE.JS SETUP
+    // ──────────────────────────────────────────────────────────────
+    const container = document.getElementById('canvas-container');
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    container.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(COLORS.FOG, 0.018);
+
+    const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 200);
+    camera.position.set(CONFIG.WORLD_WIDTH / 2, CONFIG.CAMERA_HEIGHT, CONFIG.WORLD_HEIGHT / 2 - 4);
+    camera.lookAt(CONFIG.WORLD_WIDTH / 2, 0, CONFIG.WORLD_HEIGHT / 2);
+
+    // Post-processing
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      0.6, 0.4, 0.85
+    );
+    bloomPass.threshold = 0.7;
+    bloomPass.strength = 0.7;
+    bloomPass.radius = 0.6;
+    composer.addPass(bloomPass);
+
+    const fxaaPass = new ShaderPass(FXAAShader);
+    fxaaPass.material.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+    composer.addPass(fxaaPass);
+
+    // ──────────────────────────────────────────────────────────────
+    // LIGHTING - Dappled Forest Sunlight
+    // ──────────────────────────────────────────────────────────────
+    const ambientLight = new THREE.AmbientLight(0xffeedd, 0.55);
+    scene.add(ambientLight);
+
+    const sunLight = new THREE.DirectionalLight(0xfff5e0, 1.2);
+    sunLight.position.set(CONFIG.WORLD_WIDTH * 0.3, CONFIG.WORLD_HEIGHT * 1.5, -CONFIG.GRID_WIDTH * 0.5);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.camera.near = 1;
+    sunLight.shadow.camera.far = 100;
+    sunLight.shadow.camera.left = -CONFIG.WORLD_WIDTH;
+    sunLight.shadow.camera.right = CONFIG.WORLD_WIDTH;
+    sunLight.shadow.camera.top = CONFIG.WORLD_HEIGHT;
+    sunLight.shadow.camera.bottom = -CONFIG.WORLD_HEIGHT;
+    sunLight.shadow.bias = -0.0005;
+    sunLight.shadow.normalBias = 0.02;
+    sunLight.shadow.radius = 4;
+    scene.add(sunLight);
+
+    const fillLight = new THREE.DirectionalLight(0x88ccee, 0.35);
+    fillLight.position.set(-CONFIG.WORLD_WIDTH * 0.5, CONFIG.WORLD_HEIGHT, CONFIG.WORLD_HEIGHT);
+    scene.add(fillLight);
+
+    const warmLight = new THREE.PointLight(0xffd9a0, 0.4, 50);
+    warmLight.position.set(CONFIG.WORLD_WIDTH / 2, 8, CONFIG.WORLD_HEIGHT / 2);
+    scene.add(warmLight);
+
+    // Dappled light cookies (simulated with projected textures)
+    function createDappledLight() {
+      const cookieTexture = createCookieTexture();
+      const projectorLight = new THREE.SpotLight(0xfff8e0, 0.6, 60, Math.PI / 3, 0.5, 1);
+      projectorLight.position.set(CONFIG.WORLD_WIDTH / 2, 30, CONFIG.WORLD_HEIGHT / 2);
+      projectorLight.target.position.set(CONFIG.WORLD_WIDTH / 2, 0, CONFIG.WORLD_HEIGHT / 2);
+      projectorLight.castShadow = true;
+      projectorLight.shadow.mapSize.set(1024, 1024);
+      projectorLight.shadow.camera.near = 5;
+      projectorLight.shadow.camera.far = 60;
+      projectorLight.shadow.camera.fov = 60;
+      scene.add(projectorLight);
+      scene.add(projectorLight.target);
+      return projectorLight;
+    }
+
+    function createCookieTexture() {
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, size, size);
+      ctx.fillStyle = '#fff';
+      for (let i = 0; i < 120; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const r = Math.random() * 40 + 10;
+        ctx.globalAlpha = Math.random() * 0.3 + 0.1;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+    const dappledLight = createDappledLight();
+
+    // ──────────────────────────────────────────────────────────────
+    // MATERIALS - Ghibli-style Cel-shaded with Gradients
+    // ──────────────────────────────────────────────────────────────
+    function createMossMaterial(variant = 'mid') {
+      const colors = {
+        dark: [COLORS.MOSS_DARK, COLORS.MOSS_MID],
+        mid: [COLORS.MOSS_MID, COLORS.MOSS_LIGHT],
+        light: [COLORS.MOSS_LIGHT, COLORS.MOSS_HIGHLIGHT],
+      };
+      const [base, highlight] = colors[variant];
+      return new THREE.MeshStandardMaterial({
+        color: base,
+        roughness: 0.9,
+        metalness: 0.0,
+        flatShading: false,
+        transparent: false,
+      });
+    }
+
+    function createBarkMaterial() {
+      return new THREE.MeshStandardMaterial({
+        color: COLORS.BARK,
+        roughness: 0.95,
+        metalness: 0.0,
+      });
+    }
+
+    function createBerryMaterial(glow = false) {
+      return new THREE.MeshStandardMaterial({
+        color: glow ? COLORS.BERRY_GLOW : COLORS.BERRY,
+        emissive: glow ? COLORS.BERRY_GLOW : COLORS.BERRY,
+        emissiveIntensity: glow ? 1.8 : 0.6,
+        roughness: 0.2,
+        metalness: 0.1,
+        transparent: glow,
+        opacity: glow ? 0.7 : 1,
+      });
+    }
+
+    function createEyeMaterial() {
+      return new THREE.MeshBasicMaterial({
+        color: COLORS.EYE_GLOW,
+        transparent: true,
+        opacity: 0.95,
+      });
+    }
+
+    function createPetalMaterial() {
+      return new THREE.MeshStandardMaterial({
+        color: COLORS.FLOWER_PETAL,
+        roughness: 0.7,
+        metalness: 0.05,
+        transparent: true,
+        opacity: 0.9,
+        side: THREE.DoubleSide,
+      });
+    }
+
+    function createStemMaterial() {
+      return new THREE.MeshStandardMaterial({
+        color: COLORS.STEM,
+        roughness: 0.85,
+        metalness: 0.0,
+      });
+    }
+
+    function createAntlerMaterial() {
+      return new THREE.MeshStandardMaterial({
+        color: COLORS.ANTLER,
+        roughness: 0.9,
+        metalness: 0.0,
+      });
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // WORLD - Mossy Forest Floor with Watercolor Background
+    // ──────────────────────────────────────────────────────────────
+    function createGround() {
+      const groundGroup = new THREE.Group();
+
+      // Base plane with displacement for organic feel
+      const groundGeometry = new THREE.PlaneGeometry(CONFIG.WORLD_WIDTH, CONFIG.WORLD_HEIGHT, 60, 60);
+      const positions = groundGeometry.attributes.position;
+      for (let i = 0; i < positions.count; i++) {
+        const x = positions.getX(i);
+        const y = positions.getY(i);
+        const noise = Math.sin(x * 0.15) * Math.cos(y * 0.15) * 0.15 +
+                      Math.sin(x * 0.07 + 100) * Math.cos(y * 0.07 + 200) * 0.08;
+        positions.setZ(i, noise);
+      }
+      groundGeometry.computeVertexNormals();
+
+      const groundMaterial = new THREE.MeshStandardMaterial({
+        color: COLORS.MOSS_MID,
+        roughness: 0.95,
+        metalness: 0.0,
+        vertexColors: true,
+      });
+
+      // Vertex colors for moss variation
+      const colors = [];
+      for (let i = 0; i < positions.count; i++) {
+        const variation = (Math.sin(positions.getX(i) * 0.08) + Math.cos(positions.getY(i) * 0.08)) * 0.5 + 0.5;
+        const c = new THREE.Color();
+        c.lerpColors(
+          new THREE.Color(COLORS.MOSS_DARK),
+          new THREE.Color(COLORS.MOSS_LIGHT),
+          variation
+        );
+        colors.push(c.r, c.g, c.b);
+      }
+      groundGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+      ground.rotation.x = -Math.PI / 2;
+      ground.receiveShadow = true;
+      groundGroup.add(ground);
+
+      // Subtle hand-drawn grid overlay
+      const gridGroup = new THREE.Group();
+      const gridMaterial = new THREE.LineBasicMaterial({
+        color: 0x3a5a2a,
+        transparent: true,
+        opacity: 0.06,
+        linewidth: 1,
+      });
+      const gridGeo = new THREE.BufferGeometry();
+      const gridPositions = [];
+      const step = CONFIG.GRID_SIZE;
+      for (let x = 0; x <= CONFIG.WORLD_WIDTH; x += step) {
+        gridPositions.push(x, 0.02, 0, x, 0.02, CONFIG.WORLD_HEIGHT);
+      }
+      for (let z = 0; z <= CONFIG.WORLD_HEIGHT; z += step) {
+        gridPositions.push(0, 0.02, z, CONFIG.WORLD_WIDTH, 0.02, z);
+      }
+      gridGeo.setAttribute('position', new THREE.Float32BufferAttribute(gridPositions, 3));
+      const gridLines = new THREE.LineSegments(gridGeo, gridMaterial);
+      gridGroup.add(gridLines);
+      groundGroup.add(gridGroup);
+
+      // Scattered pebbles and leaves
+      const detailGeo = new THREE.SphereGeometry(0.15, 6, 4);
+      const pebbleMat = new THREE.MeshStandardMaterial({ color: 0x4a4038, roughness: 0.9 });
+      const leafMat = new THREE.MeshStandardMaterial({ color: 0x3a5a2a, roughness: 0.9, side: THREE.DoubleSide });
+      for (let i = 0; i < 80; i++) {
+        const x = Math.random() * CONFIG.WORLD_WIDTH;
+        const z = Math.random() * CONFIG.WORLD_HEIGHT;
+        const y = Math.sin(x * 0.15) * Math.cos(z * 0.15) * 0.15 + 0.08;
+        const mesh = new THREE.Mesh(Math.random() > 0.5 ? detailGeo : new THREE.PlaneGeometry(0.3, 0.2),
+          Math.random() > 0.5 ? pebbleMat : leafMat);
+        mesh.position.set(x, y, z);
+        mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+        mesh.scale.setScalar(0.5 + Math.random() * 0.5);
+        groundGroup.add(mesh);
+      }
+
+      return groundGroup;
+    }
+
+    function createSkyDome() {
+      const skyGroup = new THREE.Group();
+
+      // Gradient sky dome
+      const skyGeo = new THREE.SphereGeometry(200, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+      const skyPositions = skyGeo.attributes.position;
+      const skyColors = [];
+      for (let i = 0; i < skyPositions.count; i++) {
+        const y = skyPositions.getY(i);
+        const normalizedY = (y + 200) / 200;
+        const c = new THREE.Color().lerpColors(
+          new THREE.Color(COLORS.SKY_HORIZON),
+          new THREE.Color(COLORS.SKY_TOP),
+          normalizedY * 0.7
+        );
+        skyColors.push(c.r, c.g, c.b);
+      }
+      skyGeo.setAttribute('color', new THREE.Float32BufferAttribute(skyColors, 3));
+
+      const skyMat = new THREE.MeshBasicMaterial({
+        vertexColors: true,
+        side: THREE.BackSide,
+        depthWrite: false,
+      });
+      const sky = new THREE.Mesh(skyGeo, skyMat);
+      sky.position.set(CONFIG.WORLD_WIDTH / 2, -50, CONFIG.WORLD_HEIGHT / 2);
+      skyGroup.add(sky);
+
+      // Fluffy watercolor clouds
+      const cloudGeo = new THREE.SphereGeometry(1, 8, 6);
+      const cloudMat = new THREE.MeshBasicMaterial({
+        color: COLORS.CLOUD,
+        transparent: true,
+        opacity: 0.7,
+        depthWrite: false,
+      });
+      for (let i = 0; i < 12; i++) {
+        const cloud = new THREE.Group();
+        const puffCount = 4 + Math.floor(Math.random() * 4);
+        for (let j = 0; j < puffCount; j++) {
+          const puff = new THREE.Mesh(cloudGeo, cloudMat);
+          puff.position.set(
+            (Math.random() - 0.5) * 8,
+            (Math.random() - 0.5) * 3,
+            (Math.random() - 0.5) * 4
+          );
+          puff.scale.setScalar(3 + Math.random() * 4);
+          cloud.add(puff);
+        }
+        cloud.position.set(
+          Math.random() * CONFIG.WORLD_WIDTH,
+          30 + Math.random() * 20,
+          Math.random() * CONFIG.WORLD_HEIGHT
+        );
+        cloud.userData = { speed: 0.02 + Math.random() * 0.03, phase: Math.random() * Math.PI * 2 };
+        skyGroup.add(cloud);
+      }
+
+      // Distant tree silhouettes
+      const treeGeo = new THREE.ConeGeometry(1, 3, 6);
+      const treeMat = new THREE.MeshBasicMaterial({
+        color: 0x2d3a25,
+        transparent: true,
+        opacity: 0.4,
+        depthWrite: false,
+      });
+      for (let i = 0; i < 30; i++) {
+        const angle = (i / 30) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+        const radius = 120 + Math.random() * 30;
+        const x = CONFIG.WORLD_WIDTH / 2 + Math.cos(angle) * radius;
+        const z = CONFIG.WORLD_HEIGHT / 2 + Math.sin(angle) * radius;
+        const tree = new THREE.Mesh(treeGeo, treeMat);
+        tree.position.set(x, 2, z);
+        tree.scale.setScalar(8 + Math.random() * 6);
+        tree.rotation.y = Math.random() * Math.PI;
+        skyGroup.add(tree);
+      }
+
+      return skyGroup;
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // SNAKE - Forest Spirit (Caterpillar/Dragon)
+    // ──────────────────────────────────────────────────────────────
+    class ForestSpirit {
+      constructor(initialLength = 5) {
+        this.segments = [];
+        this.targetPositions = [];
+        this.targetRotations = [];
+        this.currentDirection = DIRECTIONS.RIGHT;
+        this.nextDirection = DIRECTIONS.RIGHT;
+        this.isMoving = false;
+        this.growPending = 0;
+
+        this.createBody(initialLength);
+        this.createHeadDetails();
+      }
+
+      createBody(length) {
+        const startX = Math.floor(CONFIG.GRID_WIDTH / 2) - Math.floor(length / 2);
+        const startZ = Math.floor(CONFIG.GRID_HEIGHT / 2);
+
+        for (let i = 0; i < length; i++) {
+          const segment = this.createSegment(i, length - 1);
+          const gridX = startX + i;
+          const gridZ = startZ;
+          const worldPos = this.gridToWorld(gridX, gridZ);
+          worldPos.y = 0.4; // Slightly above ground
+          segment.group.position.copy(worldPos);
+          segment.gridPos = { x: gridX, z: gridZ };
+          segment.targetGridPos = { ...segment.gridPos };
+          this.segments.push(segment);
+          this.targetPositions.push(worldPos.clone());
+          this.targetRotations.push(DIRECTIONS.RIGHT.angle);
+        }
+        this.segments.forEach(s => scene.add(s.group));
+      }
+
+      createSegment(index, totalIndex) {
+        const progress = totalIndex > 0 ? index / totalIndex : 0;
+        const radius = THREE.MathUtils.lerp(CONFIG.HEAD_RADIUS, CONFIG.TAIL_RADIUS, progress);
+        const height = radius * 1.6;
+
+        const group = new THREE.Group();
+        group.userData = { index, progress, baseRadius: radius, baseHeight: height };
+
+        // Body capsule (interlocking spheres + cylinder)
+        const bodyMat = createMossMaterial(progress < 0.3 ? 'light' : progress < 0.7 ? 'mid' : 'dark');
+
+        // Main body - capsule shape
+        const capsuleGeo = new THREE.CapsuleGeometry(radius * 0.7, height * 0.7, 6, 12);
+        const capsule = new THREE.Mesh(capsuleGeo, bodyMat);
+        capsule.castShadow = true;
+        capsule.receiveShadow = true;
+        capsule.rotation.x = Math.PI / 2;
+        group.add(capsule);
+
+        // Fuzzy texture spheres along back
+        const fuzzCount = Math.floor(3 + progress * 3);
+        for (let f = 0; f < fuzzCount; f++) {
+          const fuzzGeo = new THREE.SphereGeometry(radius * (0.45 - f * 0.08), 6, 5);
+          const fuzzMat = createMossMaterial(progress < 0.5 ? 'light' : 'mid');
+          const fuzz = new THREE.Mesh(fuzzGeo, fuzzMat);
+          fuzz.position.set(
+            0,
+            height * 0.35 + f * radius * 0.3,
+            (f % 2 === 0 ? 1 : -1) * radius * 0.25
+          );
+          fuzz.scale.set(1, 0.7, 0.9);
+          fuzz.castShadow = true;
+          group.add(fuzz);
+        }
+
+        // Subtle glow on front segments
+        if (progress < 0.4) {
+          const glowGeo = new THREE.SphereGeometry(radius * 1.3, 8, 6);
+          const glowMat = new THREE.MeshBasicMaterial({
+            color: COLORS.MOSS_HIGHLIGHT,
+            transparent: true,
+            opacity: 0.04,
+            side: THREE.BackSide,
+            depthWrite: false,
+          });
+          const glow = new THREE.Mesh(glowGeo, glowMat);
+          group.add(glow);
+          group.userData.glow = glow;
+        }
+
+        return { group, capsule, progress, gridPos: { x: 0, z: 0 }, targetGridPos: { x: 0, z: 0 } };
+      }
+
+      createHeadDetails() {
+        const head = this.segments[0];
+        const radius = head.progress === 0 ? CONFIG.HEAD_RADIUS : CONFIG.HEAD_RADIUS * 0.9;
+
+        // Eyes
+        const eyeGeo = new THREE.SphereGeometry(radius * 0.18, 8, 6);
+        const eyeMat = createEyeMaterial();
+        const eyeOffset = radius * 0.5;
+        const eyeHeight = head.capsule.geometry.parameters.height * 0.4;
+
+        const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+        leftEye.position.set(-eyeOffset, eyeHeight, radius * 0.7);
+        leftEye.castShadow = false;
+        head.group.add(leftEye);
+
+        const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+        rightEye.position.set(eyeOffset, eyeHeight, radius * 0.7);
+        rightEye.castShadow = false;
+        head.group.add(rightEye);
+
+        // Pupils (small dark dots)
+        const pupilGeo = new THREE.SphereGeometry(radius * 0.07, 6, 4);
+        const pupilMat = new THREE.MeshBasicMaterial({ color: 0x1a1510 });
+        const leftPupil = new THREE.Mesh(pupilGeo, pupilMat);
+        leftPupil.position.set(-eyeOffset, eyeHeight, radius * 0.85);
+        head.group.add(leftPupil);
+        const rightPupil = new THREE.Mesh(pupilGeo, pupilMat);
+        rightPupil.position.set(eyeOffset, eyeHeight, radius * 0.85);
+        head.group.add(rightPupil);
+
+        head.group.userData.eyes = { left: leftEye, right: rightEye, leftPupil, rightPupil };
+
+        // Antlers (tiny wooden branches)
+        const antlerMat = createAntlerMaterial();
+        for (let side = -1; side <= 1; side += 2) {
+          const antler = new THREE.Group();
+          const baseGeo = new THREE.CylinderGeometry(radius * 0.06, radius * 0.1, radius * 0.5, 4);
+          const base = new THREE.Mesh(baseGeo, antlerMat);
+          base.position.y = radius * 0.25;
+          base.rotation.z = side * 0.3;
+          antler.add(base);
+
+          // Branch
+          const branchGeo = new THREE.CylinderGeometry(radius * 0.04, radius * 0.08, radius * 0.4, 4);
+          const branch = new THREE.Mesh(branchGeo, antlerMat);
+          branch.position.y = radius * 0.55;
+          branch.rotation.z = side * 0.6;
+          branch.rotation.x = -0.2;
+          antler.add(branch);
+
+          antler.position.set(side * radius * 0.55, head.capsule.geometry.parameters.height * 0.5, radius * 0.2);
+          head.group.add(antler);
+        }
+        head.group.userData.antlers = antler;
+
+        // Blink animation
+        this.blinkTimeline = anime({
+          targets: [leftEye.scale, rightEye.scale],
+          y: [1, 0.05, 1],
+          duration: 150,
+          delay: anime.stagger(0),
+          easing: 'easeInOutQuad',
+          loop: true,
+          direction: 'alternate',
+          autoplay: false,
+        });
+        // Random blinks
+        setInterval(() => {
+          if (Math.random() < 0.3) this.blinkTimeline.play();
+        }, 3000 + Math.random() * 4000);
+      }
+
+      gridToWorld(gridX, gridZ) {
+        return new THREE.Vector3(
+          gridX * CONFIG.GRID_SIZE + CONFIG.GRID_SIZE / 2,
+          0.4,
+          gridZ * CONFIG.GRID_SIZE + CONFIG.GRID_SIZE / 2
+        );
+      }
+
+      setDirection(dirKey) {
+        const newDir = DIRECTIONS[dirKey];
+        if (!newDir) return;
+        const current = this.currentDirection;
+        if (newDir.x === -current.x && newDir.z === -current.z) return;
+        this.nextDirection = newDir;
+      }
+
+      move() {
+        if (!this.isMoving) return;
+
+        this.currentDirection = this.nextDirection;
+        const head = this.segments[0];
+        const newGridX = head.gridPos.x + this.currentDirection.x;
+        const newGridZ = head.gridPos.z + this.currentDirection.z;
+
+        // Check collision
+        if (this.checkCollision(newGridX, newGridZ)) {
+          return false; // Game over
+        }
+
+        // Check food
+        const ateFood = newGridX === gameState.food.gridPos.x && newGridZ === gameState.food.gridPos.z;
+
+        // Update segment grid positions (tail follows head)
+        for (let i = this.segments.length - 1; i > 0; i--) {
+          this.segments[i].targetGridPos = { ...this.segments[i - 1].gridPos };
+        }
+        head.targetGridPos = { x: newGridX, z: newGridZ };
+        head.gridPos = { x: newGridX, z: newGridZ };
+
+        // Animate movement
+        this.animateSegments();
+
+        if (ateFood) {
+          this.growPending++;
+          gameState.eatFood();
+        }
+
+        return true;
+      }
+
+      checkCollision(gridX, gridZ) {
+        // Wall collision
+        if (gridX < 0 || gridX >= CONFIG.GRID_WIDTH || gridZ < 0 || gridZ >= CONFIG.GRID_HEIGHT) {
+          return true;
+        }
+        // Self collision
+        for (let i = 0; i < this.segments.length; i++) {
+          if (this.segments[i].gridPos.x === gridX && this.segments[i].gridPos.z === gridZ) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      animateSegments() {
+        this.segments.forEach((segment, i) => {
+          const targetWorld = this.gridToWorld(segment.targetGridPos.x, segment.targetGridPos.z);
+          const targetRot = this.getSegmentRotation(i);
+
+          // Anime.js smooth movement
+          anime({
+            targets: segment.group.position,
+            x: targetWorld.x,
+            z: targetWorld.z,
+            duration: CONFIG.ANIMATION_DURATION,
+            easing: 'easeOutQuad',
+          });
+
+          // Smooth rotation
+          anime({
+            targets: segment.group.rotation,
+            y: targetRot,
+            duration: CONFIG.ANIMATION_DURATION * 1.2,
+            easing: 'easeOutCubic',
+          });
+
+          // Update target position for next frame
+          segment.gridPos = { ...segment.targetGridPos };
+        });
+
+        // Head rotation
+        const head = this.segments[0];
+        anime({
+          targets: head.group.rotation,
+          y: this.currentDirection.angle,
+          duration: CONFIG.ANIMATION_DURATION * 0.8,
+          easing: 'easeOutCubic',
+        });
+      }
+
+      getSegmentRotation(index) {
+        if (index === 0) return this.currentDirection.angle;
+        const curr = this.segments[index];
+        const prev = this.segments[index - 1];
+        const dx = prev.gridPos.x - curr.gridPos.x;
+        const dz = prev.gridPos.z - curr.gridPos.z;
+        if (dx === 1) return 0;
+        if (dx === -1) return Math.PI;
+        if (dz === 1) return Math.PI / 2;
+        if (dz === -1) return -Math.PI / 2;
+        return curr.group.rotation.y;
+      }
+
+      grow() {
+        const tail = this.segments[this.segments.length - 1];
+        const newIndex = this.segments.length;
+        const totalIndex = newIndex; // will be new total - 1
+        const segment = this.createSegment(newIndex, totalIndex);
+        segment.group.position.copy(tail.group.position);
+        segment.gridPos = { ...tail.gridPos };
+        segment.targetGridPos = { ...tail.gridPos };
+        this.segments.push(segment);
+        scene.add(segment.group);
+
+        // Pop-in animation
+        segment.group.scale.set(0, 0, 0);
+        anime({
+          targets: segment.group.scale,
+          x: 1, y: 1, z: 1,
+          duration: 400,
+          easing: 'easeOutElastic(1, 0.6)',
+        });
+      }
+
+      triggerEatAnimation() {
+        // Head pop
+        const head = this.segments[0];
+        anime({
+          targets: head.group.scale,
+          x: [1, 1.3, 1],
+          y: [1, 1.25, 1],
+          z: [1, 1.3, 1],
+          duration: 300,
+          easing: 'easeOutQuad',
+        });
+
+        // Ripple wave down body
+        this.segments.forEach((segment, i) => {
+          if (i === 0) return;
+          anime({
+            targets: segment.group.scale,
+            y: [1, 1.15, 1],
+            x: [1, 1.05, 1],
+            z: [1, 1.05, 1],
+            duration: 500,
+            delay: i * 60,
+            easing: 'easeOutQuad',
+          });
+          // Slight lift
+          anime({
+            targets: segment.group.position,
+            y: [0, 0.4, 0],
+            duration: 500,
+            delay: i * 60,
+            easing: 'easeOutQuad',
+          });
+        });
+      }
+
+      triggerDeathAnimation() {
+        // Segments fall apart with rotation
+        this.segments.forEach((segment, i) => {
+          anime({
+            targets: segment.group.position,
+            y: -5,
+            duration: 800,
+            delay: i * 40,
+            easing: 'easeInQuad',
+          });
+          anime({
+            targets: segment.group.rotation,
+            x: (Math.random() - 0.5) * Math.PI,
+            z: (Math.random() - 0.5) * Math.PI,
+            duration: 800,
+            delay: i * 40,
+            easing: 'easeOutQuad',
+          });
+          anime({
+            targets: segment.group.scale,
+            x: 0, y: 0, z: 0,
+            duration: 600,
+            delay: i * 40 + 400,
+            easing: 'easeInQuad',
+          });
+        });
+      }
+
+      updateEyes() {
+        const head = this.segments[0];
+        const eyes = head.group.userData.eyes;
+        if (!eyes) return;
+
+        // Look in movement direction
+        const lookOffset = 0.15;
+        const dir = this.currentDirection;
+        eyes.leftPupil.position.x = eyes.left.position.x + dir.vec.x * lookOffset;
+        eyes.leftPupil.position.z = eyes.left.position.z + dir.vec.z * lookOffset;
+        eyes.rightPupil.position.x = eyes.right.position.x + dir.vec.x * lookOffset;
+        eyes.rightPupil.position.z = eyes.right.position.z + dir.vec.z * lookOffset;
+      }
+
+      destroy() {
+        this.segments.forEach(s => {
+          scene.remove(s.group);
+          s.group.traverse(obj => {
+            if (obj.geometry) obj.geometry.dispose();
+            if (obj.material) {
+              if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+              else obj.material.dispose();
+            }
+          });
+        });
+        this.segments = [];
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // FOOD - Glowing Berries on Wildflower
+    // ──────────────────────────────────────────────────────────────
+    class ForestBerry {
+      constructor() {
+        this.group = new THREE.Group();
+        this.gridPos = { x: 0, z: 0 };
+        this.createFlower();
+        this.createBerries();
+        this.createIdleAnimation();
+        scene.add(this.group);
+      }
+
+      createFlower() {
+        // Stem
+        const stemGeo = new THREE.CylinderGeometry(0.06, 0.1, 1.2, 6);
+        const stemMat = createStemMaterial();
+        this.stem = new THREE.Mesh(stemGeo, stemMat);
+        this.stem.position.y = 0.6;
+        this.stem.castShadow = true;
+        this.group.add(this.stem);
+
+        // Leaves at base
+        const leafGeo = new THREE.PlaneGeometry(0.6, 0.35);
+        const leafMat = createStemMaterial();
+        for (let i = 0; i < 3; i++) {
+          const leaf = new THREE.Mesh(leafGeo, leafMat);
+          leaf.position.set(0, 0.15, 0);
+          leaf.rotation.x = -Math.PI / 2;
+          leaf.rotation.y = (i / 3) * Math.PI * 2;
+          leaf.rotation.z = -0.3;
+          this.group.add(leaf);
+        }
+
+        // Flower head
+        this.flowerHead = new THREE.Group();
+        this.flowerHead.position.y = 1.25;
+        this.group.add(this.flowerHead);
+
+        // Petals
+        const petalGeo = new THREE.PlaneGeometry(0.45, 0.55);
+        const petalMat = createPetalMaterial();
+        const petalCount = 6;
+        for (let i = 0; i < petalCount; i++) {
+          const petal = new THREE.Mesh(petalGeo, petalMat);
+          const angle = (i / petalCount) * Math.PI * 2;
+          petal.position.set(Math.sin(angle) * 0.15, 0, Math.cos(angle) * 0.15);
+          petal.rotation.x = -Math.PI / 2.5;
+          petal.rotation.y = angle;
+          petal.userData = { baseAngle: angle, baseY: 0 };
+          this.flowerHead.add(petal);
+        }
+
+        // Flower center
+        const centerGeo = new THREE.SphereGeometry(0.15, 8, 6);
+        const centerMat = new THREE.MeshStandardMaterial({
+          color: COLORS.FLOWER_CENTER,
+          emissive: COLORS.FLOWER_CENTER,
+          emissiveIntensity: 0.5,
+          roughness: 0.3,
+        });
+        this.flowerCenter = new THREE.Mesh(centerGeo, centerMat);
+        this.flowerHead.add(this.flowerCenter);
+      }
+
+      createBerries() {
+        this.berries = [];
+        const berryCount = 3 + Math.floor(Math.random() * 2);
+        const berryGeo = new THREE.SphereGeometry(0.22, 10, 8);
+
+        for (let i = 0; i < berryCount; i++) {
+          const berryMat = createBerryMaterial(true);
+          const berry = new THREE.Mesh(berryGeo, berryMat);
+          const angle = (i / berryCount) * Math.PI * 2 + Math.PI / berryCount;
+          const radius = 0.35;
+          berry.position.set(
+            Math.sin(angle) * radius,
+            1.3 + Math.random() * 0.2,
+            Math.cos(angle) * radius
+          );
+          berry.castShadow = true;
+          berry.userData = {
+            basePos: berry.position.clone(),
+            phase: Math.random() * Math.PI * 2,
+            glowPhase: Math.random() * Math.PI * 2,
+          };
+          this.group.add(berry);
+          this.berries.push(berry);
+        }
+      }
+
+      createIdleAnimation() {
+        // Flower gentle sway
+        this.swayTimeline = anime({
+          targets: this.flowerHead.rotation,
+          z: [-0.05, 0.05, -0.05],
+          x: [0.03, -0.03, 0.03],
+          duration: 4000,
+          easing: 'easeInOutSine',
+          loop: true,
+        });
+
+        // Petal breathing
+        this.flowerHead.children.forEach((petal, i) => {
+          if (petal.userData.baseAngle !== undefined) {
+            anime({
+              targets: petal.rotation,
+              x: [-Math.PI / 2.3, -Math.PI / 2.7, -Math.PI / 2.3],
+              duration: 3000 + i * 200,
+              easing: 'easeInOutSine',
+              loop: true,
+            });
+          }
+        });
+
+        // Berries floating & glowing
+        this.berries.forEach((berry, i) => {
+          anime({
+            targets: berry.position,
+            y: [berry.userData.basePos.y, berry.userData.basePos.y + 0.15, berry.userData.basePos.y],
+            duration: 2500 + i * 300,
+            easing: 'easeInOutSine',
+            loop: true,
+          });
+          anime({
+            targets: berry.material,
+            emissiveIntensity: [1.8, 2.8, 1.8],
+            duration: 2000 + i * 200,
+            easing: 'easeInOutSine',
+            loop: true,
+          });
+          // Slow rotation
+          anime({
+            targets: berry.rotation,
+            y: Math.PI * 2,
+            duration: 8000 + i * 1000,
+            easing: 'linear',
+            loop: true,
+          });
+        });
+
+        // Center pulse
+        anime({
+          targets: this.flowerCenter.scale,
+          x: [1, 1.2, 1],
+          y: [1, 1.2, 1],
+          z: [1, 1.2, 1],
+          duration: 2500,
+          easing: 'easeInOutSine',
+          loop: true,
+        });
+        anime({
+          targets: this.flowerCenter.material,
+          emissiveIntensity: [0.5, 1.2, 0.5],
+          duration: 2500,
+          easing: 'easeInOutSine',
+          loop: true,
+        });
+      }
+
+      setPosition(gridX, gridZ) {
+        this.gridPos = { x: gridX, z: gridZ };
+        const worldPos = new THREE.Vector3(
+          gridX * CONFIG.GRID_SIZE + CONFIG.GRID_SIZE / 2,
+          0,
+          gridZ * CONFIG.GRID_SIZE + CONFIG.GRID_SIZE / 2
+        );
+        this.group.position.copy(worldPos);
+
+        // Entrance animation
+        this.group.scale.set(0, 0, 0);
+        anime({
+          targets: this.group.scale,
+          x: 1, y: 1, z: 1,
+          duration: 500,
+          easing: 'easeOutElastic(1, 0.5)',
+        });
+      }
+
+      triggerEatAnimation() {
+        // Burst particles
+        this.createEatParticles();
+
+        // Flower wilts
+        anime({
+          targets: this.flowerHead.rotation,
+          x: Math.PI / 2,
+          duration: 400,
+          easing: 'easeInQuad',
+        });
+        anime({
+          targets: this.group.scale,
+          x: 0, y: 0, z: 0,
+          duration: 500,
+          delay: 200,
+          easing: 'easeInQuad',
+        });
+
+        // Stop idle animations
+        this.swayTimeline.pause();
+      }
+
+      createEatParticles() {
+        const worldPos = new THREE.Vector3();
+        this.group.getWorldPosition(worldPos);
+
+        const particleCount = 25;
+        const particleGeo = new THREE.SphereGeometry(0.08, 6, 4);
+        const particleMats = [
+          new THREE.MeshBasicMaterial({ color: COLORS.PARTICLE_GOLD, transparent: true, opacity: 1 }),
+          new THREE.MeshBasicMaterial({ color: COLORS.PARTICLE_PINK, transparent: true, opacity: 1 }),
+          new THREE.MeshBasicMaterial({ color: COLORS.PARTICLE_GREEN, transparent: true, opacity: 1 }),
+        ];
+
+        const particles = [];
+        for (let i = 0; i < particleCount; i++) {
+          const mat = particleMats[Math.floor(Math.random() * particleMats.length)];
+          const p = new THREE.Mesh(particleGeo, mat);
+          p.position.copy(worldPos);
+          p.position.y += 1.2;
+          p.userData = {
+            velocity: new THREE.Vector3(
+              (Math.random() - 0.5) * 0.3,
+              Math.random() * 0.25 + 0.1,
+              (Math.random() - 0.5) * 0.3
+            ),
+            life: 1.0,
+            decay: 0.008 + Math.random() * 0.012,
+          };
+          scene.add(p);
+          particles.push(p);
+        }
+
+        // Animate particles
+        const animateParticles = () => {
+          let alive = 0;
+          particles.forEach(p => {
+            if (p.userData.life > 0) {
+              p.position.add(p.userData.velocity);
+              p.userData.velocity.y -= 0.006; // gravity
+              p.userData.velocity.multiplyScalar(0.985); // drag
+              p.userData.life -= p.userData.decay;
+              p.material.opacity = p.userData.life;
+              p.scale.setScalar(p.userData.life);
+              alive++;
+            } else if (p.parent) {
+              scene.remove(p);
+              p.geometry.dispose();
+              p.material.dispose();
+            }
+          });
+          if (alive > 0) requestAnimationFrame(animateParticles);
+        };
+        animateParticles();
+      }
+
+      destroy() {
+        this.swayTimeline.pause();
+        scene.remove(this.group);
+        this.group.traverse(obj => {
+          if (obj.geometry) obj.geometry.dispose();
+          if (obj.material) {
+            if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+            else obj.material.dispose();
+          }
+        });
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // GAME STATE
+    // ──────────────────────────────────────────────────────────────
+    const gameState = {
+      snake: null,
+      food: null,
+      score: 0,
+      berries: 0,
+      speed: CONFIG.INITIAL_SPEED,
+      moveTimer: 0,
+      lastMoveTime: 0,
+      isPaused: false,
+      isGameOver: false,
+      isInitialized: false,
+      animationId: null,
+    };
+
+    function initGame() {
+      // Create world
+      scene.add(createGround());
+      scene.add(createSkyDome());
+
+      // Create snake
+      gameState.snake = new ForestSpirit(5);
+      gameState.snake.isMoving = true;
+
+      // Create first food
+      spawnFood();
+
+      gameState.isInitialized = true;
+      gameState.score = 0;
+      gameState.berries = 0;
+      gameState.speed = CONFIG.INITIAL_SPEED;
+      gameState.moveTimer = 0;
+      gameState.isPaused = false;
+      gameState.isGameOver = false;
+
+      updateHUD();
+
+      // Entrance camera animation
+      animateCameraEntrance();
+    }
+
+    function spawnFood() {
+      if (gameState.food) gameState.food.destroy();
+
+      let valid = false;
+      let gridX, gridZ;
+      let attempts = 0;
+      while (!valid && attempts < 100) {
+        gridX = Math.floor(Math.random() * CONFIG.GRID_WIDTH);
+        gridZ = Math.floor(Math.random() * CONFIG.GRID_HEIGHT);
+        valid = !gameState.snake.segments.some(s => s.gridPos.x === gridX && s.gridPos.z === gridZ);
+        attempts++;
+      }
+
+      gameState.food = new ForestBerry();
+      gameState.food.setPosition(gridX, gridZ);
+    }
+
+    function animateCameraEntrance() {
+      camera.position.set(CONFIG.WORLD_WIDTH / 2, CONFIG.CAMERA_HEIGHT * 2, CONFIG.WORLD_HEIGHT / 2 - 15);
+      camera.lookAt(CONFIG.WORLD_WIDTH / 2, 0, CONFIG.WORLD_HEIGHT / 2);
+
+      anime({
+        targets: camera.position,
+        y: CONFIG.CAMERA_HEIGHT,
+        duration: 1200,
+        easing: 'easeOutCubic',
+      });
+      anime({
+        targets: camera.position,
+        z: CONFIG.WORLD_HEIGHT / 2 - 4,
+        duration: 1200,
+        easing: 'easeOutCubic',
+      });
+    }
+
+    function updateHUD() {
+      document.getElementById('score-value').textContent = gameState.score.toLocaleString();
+      document.getElementById('berry-value').textContent = gameState.berries;
+    }
+
+    function gameLoop(timestamp) {
+      if (!gameState.isInitialized) return;
+
+      const delta = timestamp - (gameState.lastMoveTime || timestamp);
+      gameState.lastMoveTime = timestamp;
+
+      if (!gameState.isPaused && !gameState.isGameOver) {
+        gameState.moveTimer += delta;
+        if (gameState.moveTimer >= gameState.speed) {
+          gameState.moveTimer = 0;
+          const alive = gameState.snake.move();
+          if (!alive) {
+            gameOver();
+          }
+        }
+      }
+
+      // Update camera to follow snake smoothly
+      updateCamera();
+
+      // Update snake eyes
+      gameState.snake.updateEyes();
+
+      // Animate dappled light
+      dappledLight.position.x = CONFIG.WORLD_WIDTH / 2 + Math.sin(timestamp * 0.0003) * 8;
+      dappledLight.position.z = CONFIG.WORLD_HEIGHT / 2 + Math.cos(timestamp * 0.0004) * 6;
+      dappledLight.target.position.copy(dappledLight.position);
+      dappledLight.target.position.y = 0;
+
+      // Animate clouds
+      scene.traverse(obj => {
+        if (obj.userData.speed && obj.userData.phase !== undefined) {
+          obj.position.x += obj.userData.speed;
+          if (obj.position.x > CONFIG.WORLD_WIDTH + 50) obj.position.x = -50;
+          obj.position.y = 30 + Math.sin(timestamp * 0.0005 + obj.userData.phase) * 2;
+        }
+      });
+
+      // Warm light subtle pulse
+      warmLight.intensity = 0.4 + Math.sin(timestamp * 0.001) * 0.05;
+
+      composer.render();
+      gameState.animationId = requestAnimationFrame(gameLoop);
+    }
+
+    function updateCamera() {
+      const head = gameState.snake.segments[0];
+      const targetX = head.group.position.x + gameState.snake.currentDirection.vec.x * CONFIG.CAMERA_LOOK_AHEAD * CONFIG.GRID_SIZE;
+      const targetZ = head.group.position.z + gameState.snake.currentDirection.vec.z * CONFIG.CAMERA_LOOK_AHEAD * CONFIG.GRID_SIZE;
+
+      camera.position.x += (targetX - camera.position.x) * 0.05;
+      camera.position.z += (targetZ - camera.position.z) * 0.05;
+      camera.lookAt(head.group.position.x, 0, head.group.position.z);
+    }
+
+    function gameOver() {
+      gameState.isGameOver = true;
+      gameState.snake.isMoving = false;
+      gameState.snake.triggerDeathAnimation();
+
+      // Camera shake
+      anime({
+        targets: camera.position,
+        x: camera.position.x + (Math.random() - 0.5) * 2,
+        y: camera.position.y + (Math.random() - 0.5) * 1,
+        z: camera.position.z + (Math.random() - 0.5) * 2,
+        duration: 80,
+        easing: 'easeOutQuad',
+        loop: 4,
+        direction: 'alternate',
+      });
+
+      // Bloom flash
+      anime({
+        targets: bloomPass,
+        strength: [0.7, 1.8, 0.7],
+        duration: 400,
+        easing: 'easeOutQuad',
+      });
+
+      setTimeout(showGameOverModal, 800);
+    }
+
+    function showGameOverModal() {
+      document.getElementById('final-score').textContent = gameState.score.toLocaleString();
+      document.getElementById('final-berries').textContent = gameState.berries;
+      const modal = document.getElementById('game-over-modal');
+      modal.classList.remove('hidden');
+      modal.querySelector('.modal-panel').style.transform = 'scale(0.9)';
+      modal.querySelector('.modal-panel').style.opacity = '0';
+      anime({
+        targets: modal.querySelector('.modal-panel'),
+        scale: 1,
+        opacity: 1,
+        duration: 400,
+        easing: 'easeOutElastic(1, 0.6)',
+      });
+    }
+
+    function restartGame() {
+      // Hide modal
+      const modal = document.getElementById('game-over-modal');
+      anime({
+        targets: modal.querySelector('.modal-panel'),
+        scale: 0.9,
+        opacity: 0,
+        duration: 200,
+        easing: 'easeInQuad',
+        complete: () => modal.classList.add('hidden'),
+      });
+
+      // Clean up
+      gameState.snake.destroy();
+      if (gameState.food) gameState.food.destroy();
+      anime.running.forEach(a => a.pause());
+
+      // Reinitialize
+      initGame();
+    }
+
+    function togglePause() {
+      if (gameState.isGameOver) return;
+      gameState.isPaused = !gameState.isPaused;
+      const btn = document.getElementById('pause-btn');
+      btn.textContent = gameState.isPaused ? '▶ Resume' : '❚❚ Pause';
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // INPUT HANDLING
+    // ──────────────────────────────────────────────────────────────
+    function handleKeyDown(event) {
+      const action = KEY_MAP[event.code];
+      if (!action) return;
+
+      if (action === 'PAUSE') {
+        togglePause();
+        return;
+      }
+
+      if (gameState.isPaused || gameState.isGameOver) return;
+      gameState.snake.setDirection(action);
+    }
+
+    // Touch/swipe support
+    let touchStart = null;
+    function handleTouchStart(e) {
+      touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+    function handleTouchEnd(e) {
+      if (!touchStart || gameState.isPaused || gameState.isGameOver) return;
+      const dx = e.changedTouches[0].clientX - touchStart.x;
+      const dy = e.changedTouches[0].clientY - touchStart.y;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        gameState.snake.setDirection(dx > 0 ? 'RIGHT' : 'LEFT');
+      } else {
+        gameState.snake.setDirection(dy > 0 ? 'DOWN' : 'UP');
+      }
+      touchStart = null;
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // RESIZE HANDLING
+    // ──────────────────────────────────────────────────────────────
+    function onResize() {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+      composer.setSize(width, height);
+      fxaaPass.material.uniforms['resolution'].value.set(1 / width, 1 / height);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // EVENT LISTENERS & START
+    // ──────────────────────────────────────────────────────────────
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', onResize);
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    document.getElementById('pause-btn').addEventListener('click', togglePause);
+    document.getElementById('restart-btn').addEventListener('click', restartGame);
+    document.getElementById('play-again-btn').addEventListener('click', restartGame);
+
+    // Handle visibility change
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && gameState.isInitialized && !gameState.isGameOver) {
+        togglePause();
+      }
+    });
+
+    // Start game
+    initGame();
+    gameState.animationId = requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
