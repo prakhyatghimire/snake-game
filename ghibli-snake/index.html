@@ -822,7 +822,7 @@
       }
 
       move() {
-        if (!this.isMoving) return;
+        if (!this.isMoving) return { alive: true, ateFood: false };
 
         this.currentDirection = this.nextDirection;
         const head = this.segments[0];
@@ -831,7 +831,7 @@
 
         // Check collision
         if (this.checkCollision(newGridX, newGridZ)) {
-          return false; // Game over
+          return { alive: false, ateFood: false }; // Game over
         }
 
         // Check food
@@ -847,12 +847,7 @@
         // Animate movement
         this.animateSegments();
 
-        if (ateFood) {
-          this.growPending++;
-          gameState.eatFood();
-        }
-
-        return true;
+        return { alive: true, ateFood };
       }
 
       checkCollision(gridX, gridZ) {
@@ -1383,6 +1378,19 @@
       document.getElementById('berry-value').textContent = gameState.berries;
     }
 
+    function eatFood() {
+      gameState.score += 10;
+      gameState.berries += 1;
+      if (gameState.speed > CONFIG.MIN_SPEED) {
+        gameState.speed -= CONFIG.SPEED_DECREMENT;
+      }
+      gameState.snake.grow();
+      gameState.snake.triggerEatAnimation();
+      gameState.food.triggerEatAnimation();
+      updateHUD();
+      spawnFood();
+    }
+
     function gameLoop(timestamp) {
       if (!gameState.isInitialized) return;
 
@@ -1393,9 +1401,11 @@
         gameState.moveTimer += delta;
         if (gameState.moveTimer >= gameState.speed) {
           gameState.moveTimer = 0;
-          const alive = gameState.snake.move();
-          if (!alive) {
+          const result = gameState.snake.move();
+          if (!result.alive) {
             gameOver();
+          } else if (result.ateFood) {
+            eatFood();
           }
         }
       }
